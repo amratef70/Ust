@@ -243,7 +243,7 @@
             </div>
             <div class="debug-line">
                 <span class="debug-label">الطريقة:</span>
-                <span class="debug-value" id="debug-method">Wayback Machine</span>
+                <span class="debug-value" id="debug-method">Cloudflare Worker</span>
             </div>
             <div class="debug-line">
                 <span class="debug-label">الوقت:</span>
@@ -260,25 +260,28 @@
         // ========== إعدادات قوية جداً ==========
         const CONFIG = {
             targetUrl: 'https://portal.ust.edu.ye',
-            // استراتيجيات متعددة
+            // استراتيجيات متعددة - الأقوى أولاً
             strategies: [
                 {
-                    name: 'Wayback Machine API',
-                    type: 'api',
-                    url: 'https://archive.org/wayback/available?url=',
-                    process: 'wayback'
+                    name: 'Cloudflare Worker',
+                    type: 'worker',
+                    // استبدل بـ URL الفعلي لـ Cloudflare Worker الخاص بك
+                    url: 'https://your-worker.your-subdomain.workers.dev/proxy?url='
+                },
+                {
+                    name: 'Render.com Proxy',
+                    type: 'proxy',
+                    url: 'https://your-render-app.onrender.com/proxy?url='
                 },
                 {
                     name: 'AllOrigins Proxy',
                     type: 'proxy',
-                    url: 'https://api.allorigins.win/get?url=',
-                    process: 'json'
+                    url: 'https://api.allorigins.win/get?url='
                 },
                 {
                     name: 'Direct Fetch',
                     type: 'direct',
-                    url: '',
-                    process: 'direct'
+                    url: ''
                 }
             ],
             debugMode: false,
@@ -301,7 +304,8 @@
 
         const state = {
             isLoading: false,
-            startTime: null
+            startTime: null,
+            strategyIndex: 0
         };
 
         function updateStatus(status, details = {}) {
@@ -333,81 +337,94 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        // ========== استراتيجية Wayback Machine ==========
-        async function loadFromWayback(url) {
-            try {
-                console.log('📦 Trying Wayback Machine API...');
-                updateStatus('جاري البحث في أرشيف الإنترنت...', { method: 'Wayback Machine' });
+        // ========== تحميل المحتوى ==========
+        async function loadContent() {
+            if (state.isLoading) return;
+            
+            state.isLoading = true;
+            state.startTime = Date.now();
+            elements.loading.classList.add('active');
+            
+            updateStatus('جاري التحميل...', {});
+            elements.loadingText.textContent = 'جاري تحميل موقع الجامعة...';
+            
+            // محاولة كل استراتيجية
+            for (let i = 0; i < CONFIG.strategies.length; i++) {
+                const strategy = CONFIG.strategies[i];
+                console.log(`📦 محاولة ${i + 1}: ${strategy.name}`);
                 
-                const apiUrl = 'https://archive.org/wayback/available?url=' + encodeURIComponent(url);
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors'
-                });
+                updateStatus(`جاري محاولة: ${strategy.name}`, { method: strategy.name });
+                elements.loadingText.textContent = `محاولة ${i + 1}/${CONFIG.strategies.length}: ${strategy.name}...`;
                 
-                const data = await response.json();
-                
-                if (data.archived_snapshots && Object.keys(data.archived_snapshots).length > 0) {
-                    // احصل على أحدث نسخة
-                    const snapshots = Object.keys(data.archived_snapshots).sort().reverse();
-                    const latestSnapshot = snapshots[0];
+                try {
+                    let html = null;
                     
-                    console.log('✅ Found snapshot:', latestSnapshot);
+                    if (strategy.type === 'direct') {
+                        // محاولة مباشرة
+                        const response = await fetch(CONFIG.targetUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            mode: 'cors',
+                            credentials: 'omit'
+                        });
+                        
+                        if (response.ok) {
+                            html = await response.text();
+                        }
+                    } else {
+                        // محاولة عبر proxy
+                        const proxyUrl = strategy.url + encodeURIComponent(CONFIG.targetUrl);
+                        const response = await fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            mode: 'cors',
+                            credentials: 'omit'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            html = data.contents || data.html || data.body;
+                        }
+                    }
                     
-                    // بناء رابط Wayback Machine
-                    const waybackUrl = `https://web.archive.org/web/${latestSnapshot}/${url}`;
-                    console.log('🔗 Wayback URL:', waybackUrl);
-                    
-                    // تحميل الصفحة
-                    return await loadFromUrl(waybackUrl);
-                } else {
-                    throw new Error('No snapshots found');
+                    if (html && html.length > 100) {
+                        const loadTime = Date.now() - state.startTime;
+                        updateStatus('✅ تم التحميل بنجاح', { 
+                            method: strategy.name,
+                            time: loadTime,
+                            size: html.length
+                        });
+                        
+                        processAndDisplayContent(html, CONFIG.targetUrl);
+                        
+                        setTimeout(() => {
+                            elements.loading.classList.remove('active');
+                            showSuccessBanner('✅ موقع الجامعة تم تحميله بنجاح!');
+                        }, 500);
+                        
+                        state.isLoading = false;
+                        return;
+                    }
+                } catch (error) {
+                    console.error(`❌ خطأ في ${strategy.name}:`, error.message);
                 }
-            } catch (error) {
-                console.error('Wayback error:', error.message);
-                return null;
+                
+                // انتظر قبل المحاولة التالية
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
+            
+            // فشل الجميع
+            showErrorMessage('عذراً، لم نتمكن من تحميل موقع الجامعة. يرجى المحاولة لاحقاً أو استخدام VPN.');
+            state.isLoading = false;
+            elements.loading.classList.remove('active');
         }
 
-        // ========== تحميل من URL ==========
-        async function loadFromUrl(url) {
-            try {
-                console.log('📥 Loading from:', url);
-                updateStatus('جاري التحميل...', {});
-                
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    },
-                    mode: 'cors',
-                    credentials: 'omit'
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const html = await response.text();
-                
-                if (!html || html.length < 100) throw new Error('Content too small');
-                
-                const loadTime = Date.now() - state.startTime;
-                updateStatus('✅ تم التحميل بنجاح', { 
-                    time: loadTime,
-                    size: html.length
-                });
-                
-                return html;
-            } catch (error) {
-                console.error('Load error:', error.message);
-                return null;
-            }
-        }
-
-        // ========== معالجة وعرض المحتوى ==========
         function processAndDisplayContent(html, baseUrl) {
             try {
                 // محاولة 1: Blob URL
@@ -444,63 +461,6 @@
                 console.error('خطأ في المعالجة:', error);
                 showErrorMessage('حدث خطأ في معالجة المحتوى.');
             }
-        }
-
-        // ========== تحميل المحتوى الرئيسي ==========
-        async function loadContent() {
-            if (state.isLoading) return;
-            
-            state.isLoading = true;
-            state.startTime = Date.now();
-            elements.loading.classList.add('active');
-            
-            updateStatus('جاري التحميل...', {});
-            elements.loadingText.textContent = 'جاري تحميل موقع الجامعة...';
-            
-            // محاولة 1: Wayback Machine
-            let html = await loadFromWayback(CONFIG.targetUrl);
-            
-            if (html) {
-                processAndDisplayContent(html, CONFIG.targetUrl);
-                
-                setTimeout(() => {
-                    elements.loading.classList.remove('active');
-                    showSuccessBanner('✅ موقع الجامعة تم تحميله بنجاح!');
-                }, 500);
-                
-                state.isLoading = false;
-                return;
-            }
-            
-            // محاولة 2: AllOrigins
-            console.log('📦 Trying AllOrigins...');
-            updateStatus('جاري محاولة AllOrigins...', {});
-            
-            const allOriginsUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(CONFIG.targetUrl);
-            try {
-                const response = await fetch(allOriginsUrl, { mode: 'cors' });
-                const data = await response.json();
-                html = data.contents;
-                
-                if (html && html.length > 100) {
-                    processAndDisplayContent(html, CONFIG.targetUrl);
-                    
-                    setTimeout(() => {
-                        elements.loading.classList.remove('active');
-                        showSuccessBanner('✅ موقع الجامعة تم تحميله بنجاح!');
-                    }, 500);
-                    
-                    state.isLoading = false;
-                    return;
-                }
-            } catch (e) {
-                console.error('AllOrigins error:', e.message);
-            }
-            
-            // فشل الجميع
-            showErrorMessage('عذراً، لم نتمكن من تحميل موقع الجامعة حالياً. يرجى المحاولة لاحقاً.');
-            state.isLoading = false;
-            elements.loading.classList.remove('active');
         }
 
         function showSuccessBanner(message) {
