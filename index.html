@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>عرض موقع الجامعة - Clickjacking Lab</title>
+    <title>جامعة العلوم والتكنولوجيا - البوابة الإلكترونية</title>
     <style>
         * {
             margin: 0;
@@ -17,9 +17,9 @@
             height: 100%;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
         }
 
-        /* الحاوية الرئيسية */
         #main-container {
             position: absolute;
             top: 0;
@@ -28,25 +28,20 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             z-index: 1;
         }
 
-        /* الإطار المستهدف - يعرض موقع الجامعة */
         #target-frame {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            border: 3px solid #28a745;
+            border: none;
             z-index: 5;
             background: white;
-            box-shadow: inset 0 0 20px rgba(40, 167, 69, 0.3);
         }
 
-        /* الزر الشفاف فوق الموقع */
         #transparent-button {
             position: fixed;
             top: 50%;
@@ -77,11 +72,6 @@
             transform: translate(-50%, -50%) scale(1.05);
         }
 
-        #transparent-button:active {
-            transform: translate(-50%, -50%) scale(0.98);
-        }
-
-        /* شريط المعلومات العلوي */
         #info-banner {
             position: fixed;
             top: 0;
@@ -106,7 +96,6 @@
             font-size: 14px;
         }
 
-        /* مؤشر التحميل */
         .loading-indicator {
             display: none;
             position: fixed;
@@ -131,11 +120,6 @@
             margin: 0 auto 20px;
         }
 
-        .loading-text {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -145,22 +129,23 @@
             display: block;
         }
 
-        /* شريط المعلومات السفلي */
         #debug-panel {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             color: #00ff00;
             padding: 15px 20px;
             border-radius: 8px;
-            font-size: 12px;
+            font-size: 11px;
             z-index: 199;
             font-family: 'Courier New', monospace;
-            max-width: 400px;
+            max-width: 500px;
             display: none;
             border: 2px solid #00ff00;
             box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         #debug-panel.active {
@@ -168,10 +153,11 @@
         }
 
         .debug-line {
-            margin: 8px 0;
+            margin: 6px 0;
             display: flex;
             justify-content: space-between;
-            gap: 20px;
+            gap: 15px;
+            word-break: break-all;
         }
 
         .debug-label {
@@ -184,7 +170,6 @@
             color: #ffff00;
         }
 
-        /* شريط النجاح */
         .success-banner {
             position: fixed;
             top: 60px;
@@ -211,7 +196,6 @@
             }
         }
 
-        /* استجابة الشاشات الصغيرة */
         @media (max-width: 768px) {
             #transparent-button {
                 width: 150px;
@@ -225,7 +209,7 @@
             }
 
             #debug-panel {
-                font-size: 11px;
+                font-size: 10px;
                 max-width: 300px;
                 bottom: 10px;
                 right: 10px;
@@ -234,38 +218,32 @@
     </style>
 </head>
 <body>
-    <!-- شريط المعلومات العلوي -->
     <div id="info-banner">
-        ✅ موقع جامعة العلوم والتكنولوجيا - تم تحميله بنجاح عبر البروكسي
+        ✅ موقع جامعة العلوم والتكنولوجيا - تم التحميل بنجاح!
         <span class="status" id="status-badge">جاهز</span>
     </div>
 
-    <!-- الحاوية الرئيسية -->
     <div id="main-container">
-        <!-- الإطار المستهدف - يعرض موقع الجامعة -->
-        <iframe id="target-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>
+        <iframe id="target-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation allow-presentation"></iframe>
 
-        <!-- الزر الشفاف فوق الموقع -->
         <button id="transparent-button" title="هذا زر شفاف فوق موقع الجامعة - مثال على Clickjacking">
             🎯 زر شفاف<br>
             <small style="font-size: 12px;">(Clickjacking Demo)</small>
         </button>
 
-        <!-- مؤشر التحميل -->
         <div class="loading-indicator" id="loading">
             <div class="spinner"></div>
-            <div class="loading-text">جاري تحميل موقع الجامعة...</div>
+            <div class="loading-text" id="loading-text">جاري تحميل موقع الجامعة...</div>
         </div>
 
-        <!-- شريط المعلومات التصحيحية -->
         <div id="debug-panel">
             <div class="debug-line">
                 <span class="debug-label">الحالة:</span>
                 <span class="debug-value" id="debug-status">جاري التحميل</span>
             </div>
             <div class="debug-line">
-                <span class="debug-label">البروكسي:</span>
-                <span class="debug-value" id="debug-proxy">-</span>
+                <span class="debug-label">الطريقة:</span>
+                <span class="debug-value" id="debug-method">Wayback Machine</span>
             </div>
             <div class="debug-line">
                 <span class="debug-label">الوقت:</span>
@@ -279,21 +257,34 @@
     </div>
 
     <script>
-        // إعدادات التطبيق
+        // ========== إعدادات قوية جداً ==========
         const CONFIG = {
             targetUrl: 'https://portal.ust.edu.ye',
-            proxies: [
-                { name: 'AllOrigins', url: 'https://api.allorigins.win/get?url=' },
-                { name: 'CodeTabs', url: 'https://api.codetabs.com/v1/proxy/?quest=' },
-                { name: 'CORS Anywhere', url: 'https://cors-anywhere.herokuapp.com/' }
+            // استراتيجيات متعددة
+            strategies: [
+                {
+                    name: 'Wayback Machine API',
+                    type: 'api',
+                    url: 'https://archive.org/wayback/available?url=',
+                    process: 'wayback'
+                },
+                {
+                    name: 'AllOrigins Proxy',
+                    type: 'proxy',
+                    url: 'https://api.allorigins.win/get?url=',
+                    process: 'json'
+                },
+                {
+                    name: 'Direct Fetch',
+                    type: 'direct',
+                    url: '',
+                    process: 'direct'
+                }
             ],
             debugMode: false,
-            maxRetries: 3,
-            timeout: 30000,
             autoLoad: true
         };
 
-        // عناصر DOM
         const elements = {
             targetFrame: document.getElementById('target-frame'),
             transparentButton: document.getElementById('transparent-button'),
@@ -302,22 +293,17 @@
             debugPanel: document.getElementById('debug-panel'),
             statusBadge: document.getElementById('status-badge'),
             debugStatus: document.getElementById('debug-status'),
-            debugProxy: document.getElementById('debug-proxy'),
+            debugMethod: document.getElementById('debug-method'),
             debugTime: document.getElementById('debug-time'),
-            debugSize: document.getElementById('debug-size')
+            debugSize: document.getElementById('debug-size'),
+            loadingText: document.getElementById('loading-text')
         };
 
-        // متغيرات الحالة
         const state = {
             isLoading: false,
-            currentProxyIndex: 0,
-            startTime: null,
-            retryCount: 0
+            startTime: null
         };
 
-        /**
-         * تحديث حالة التطبيق
-         */
         function updateStatus(status, details = {}) {
             console.log('[Lab]', status, details);
             
@@ -325,8 +311,8 @@
                 elements.debugPanel.classList.add('active');
                 elements.debugStatus.textContent = status;
                 
-                if (details.proxy) {
-                    elements.debugProxy.textContent = details.proxy;
+                if (details.method) {
+                    elements.debugMethod.textContent = details.method;
                 }
                 if (details.time) {
                     elements.debugTime.textContent = details.time + 'ms';
@@ -339,9 +325,6 @@
             elements.statusBadge.textContent = status;
         }
 
-        /**
-         * تنسيق حجم البيانات
-         */
         function formatBytes(bytes) {
             if (bytes === 0) return '0 B';
             const k = 1024;
@@ -350,43 +333,135 @@
             return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
 
-        /**
-         * تحميل المحتوى عبر البروكسي
-         */
-        function loadContentViaProxy(url) {
+        // ========== استراتيجية Wayback Machine ==========
+        async function loadFromWayback(url) {
+            try {
+                console.log('📦 Trying Wayback Machine API...');
+                updateStatus('جاري البحث في أرشيف الإنترنت...', { method: 'Wayback Machine' });
+                
+                const apiUrl = 'https://archive.org/wayback/available?url=' + encodeURIComponent(url);
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                const data = await response.json();
+                
+                if (data.archived_snapshots && Object.keys(data.archived_snapshots).length > 0) {
+                    // احصل على أحدث نسخة
+                    const snapshots = Object.keys(data.archived_snapshots).sort().reverse();
+                    const latestSnapshot = snapshots[0];
+                    
+                    console.log('✅ Found snapshot:', latestSnapshot);
+                    
+                    // بناء رابط Wayback Machine
+                    const waybackUrl = `https://web.archive.org/web/${latestSnapshot}/${url}`;
+                    console.log('🔗 Wayback URL:', waybackUrl);
+                    
+                    // تحميل الصفحة
+                    return await loadFromUrl(waybackUrl);
+                } else {
+                    throw new Error('No snapshots found');
+                }
+            } catch (error) {
+                console.error('Wayback error:', error.message);
+                return null;
+            }
+        }
+
+        // ========== تحميل من URL ==========
+        async function loadFromUrl(url) {
+            try {
+                console.log('📥 Loading from:', url);
+                updateStatus('جاري التحميل...', {});
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const html = await response.text();
+                
+                if (!html || html.length < 100) throw new Error('Content too small');
+                
+                const loadTime = Date.now() - state.startTime;
+                updateStatus('✅ تم التحميل بنجاح', { 
+                    time: loadTime,
+                    size: html.length
+                });
+                
+                return html;
+            } catch (error) {
+                console.error('Load error:', error.message);
+                return null;
+            }
+        }
+
+        // ========== معالجة وعرض المحتوى ==========
+        function processAndDisplayContent(html, baseUrl) {
+            try {
+                // محاولة 1: Blob URL
+                try {
+                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    elements.targetFrame.src = blobUrl;
+                    console.log('✅ تم التحميل عبر Blob URL');
+                    return;
+                } catch (e) {
+                    console.log('Blob URL failed, trying srcdoc...');
+                }
+                
+                // محاولة 2: srcdoc
+                let processedHtml = html;
+                
+                // إزالة رؤوس الحماية
+                processedHtml = processedHtml.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
+                processedHtml = processedHtml.replace(/Content-Security-Policy/gi, 'CSP-Disabled');
+                processedHtml = processedHtml.replace(/frame-ancestors/gi, 'frame-ancestors-disabled');
+                
+                // إضافة base tag
+                const baseTag = `<base href="${baseUrl}">`;
+                if (processedHtml.includes('</head>')) {
+                    processedHtml = processedHtml.replace('</head>', `${baseTag}</head>`);
+                } else {
+                    processedHtml = `<head>${baseTag}</head>${processedHtml}`;
+                }
+                
+                elements.targetFrame.srcdoc = processedHtml;
+                console.log('✅ تم التحميل عبر srcdoc');
+                
+            } catch (error) {
+                console.error('خطأ في المعالجة:', error);
+                showErrorMessage('حدث خطأ في معالجة المحتوى.');
+            }
+        }
+
+        // ========== تحميل المحتوى الرئيسي ==========
+        async function loadContent() {
             if (state.isLoading) return;
             
             state.isLoading = true;
             state.startTime = Date.now();
             elements.loading.classList.add('active');
             
-            updateStatus('جاري التحميل...', { 
-                proxy: CONFIG.proxies[state.currentProxyIndex].name 
-            });
+            updateStatus('جاري التحميل...', {});
+            elements.loadingText.textContent = 'جاري تحميل موقع الجامعة...';
             
-            const proxy = CONFIG.proxies[state.currentProxyIndex];
-            const proxyUrl = proxy.url + encodeURIComponent(url);
+            // محاولة 1: Wayback Machine
+            let html = await loadFromWayback(CONFIG.targetUrl);
             
-            fetch(proxyUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                },
-                timeout: CONFIG.timeout
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return response.text();
-            })
-            .then(html => {
-                const loadTime = Date.now() - state.startTime;
-                updateStatus('✅ تم التحميل بنجاح', { 
-                    proxy: proxy.name, 
-                    time: loadTime,
-                    size: html.length
-                });
-                
-                processAndDisplayContent(html, url);
+            if (html) {
+                processAndDisplayContent(html, CONFIG.targetUrl);
                 
                 setTimeout(() => {
                     elements.loading.classList.remove('active');
@@ -394,62 +469,40 @@
                 }, 500);
                 
                 state.isLoading = false;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                updateStatus('❌ خطأ في التحميل', { proxy: proxy.name });
-                
-                state.retryCount++;
-                state.currentProxyIndex++;
-                
-                if (state.currentProxyIndex < CONFIG.proxies.length && state.retryCount < CONFIG.maxRetries) {
-                    console.log(`محاولة البروكسي: ${CONFIG.proxies[state.currentProxyIndex].name}`);
-                    setTimeout(() => loadContentViaProxy(url), 1000);
-                } else {
-                    showErrorMessage('عذراً، لم نتمكن من تحميل موقع الجامعة. يرجى المحاولة لاحقاً.');
-                    state.isLoading = false;
-                    elements.loading.classList.remove('active');
-                }
-            });
-        }
-
-        /**
-         * معالجة وعرض المحتوى
-         */
-        function processAndDisplayContent(html, baseUrl) {
-            try {
-                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-                const blobUrl = URL.createObjectURL(blob);
-                elements.targetFrame.src = blobUrl;
-                console.log('✅ تم تحميل المحتوى عبر Blob URL');
-            } catch (error) {
-                console.error('خطأ:', error);
-                try {
-                    let processedHtml = html;
-                    
-                    processedHtml = processedHtml.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
-                    processedHtml = processedHtml.replace(/Content-Security-Policy/gi, 'CSP-Disabled');
-                    processedHtml = processedHtml.replace(/frame-ancestors/gi, 'frame-ancestors-disabled');
-                    
-                    const baseTag = `<base href="${baseUrl}">`;
-                    if (processedHtml.includes('</head>')) {
-                        processedHtml = processedHtml.replace('</head>', `${baseTag}</head>`);
-                    } else {
-                        processedHtml = `<head>${baseTag}</head>${processedHtml}`;
-                    }
-                    
-                    elements.targetFrame.srcdoc = processedHtml;
-                    console.log('✅ تم تحميل المحتوى عبر srcdoc');
-                } catch (fallbackError) {
-                    console.error('خطأ في المعالجة:', fallbackError);
-                    showErrorMessage('حدث خطأ في معالجة المحتوى.');
-                }
+                return;
             }
+            
+            // محاولة 2: AllOrigins
+            console.log('📦 Trying AllOrigins...');
+            updateStatus('جاري محاولة AllOrigins...', {});
+            
+            const allOriginsUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(CONFIG.targetUrl);
+            try {
+                const response = await fetch(allOriginsUrl, { mode: 'cors' });
+                const data = await response.json();
+                html = data.contents;
+                
+                if (html && html.length > 100) {
+                    processAndDisplayContent(html, CONFIG.targetUrl);
+                    
+                    setTimeout(() => {
+                        elements.loading.classList.remove('active');
+                        showSuccessBanner('✅ موقع الجامعة تم تحميله بنجاح!');
+                    }, 500);
+                    
+                    state.isLoading = false;
+                    return;
+                }
+            } catch (e) {
+                console.error('AllOrigins error:', e.message);
+            }
+            
+            // فشل الجميع
+            showErrorMessage('عذراً، لم نتمكن من تحميل موقع الجامعة حالياً. يرجى المحاولة لاحقاً.');
+            state.isLoading = false;
+            elements.loading.classList.remove('active');
         }
 
-        /**
-         * عرض رسالة النجاح
-         */
         function showSuccessBanner(message) {
             const banner = document.createElement('div');
             banner.className = 'success-banner';
@@ -459,9 +512,6 @@
             setTimeout(() => banner.remove(), 4000);
         }
 
-        /**
-         * عرض رسالة خطأ
-         */
         function showErrorMessage(message) {
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `
@@ -484,47 +534,40 @@
             errorDiv.textContent = message;
             document.body.appendChild(errorDiv);
             
-            setTimeout(() => errorDiv.remove(), 5000);
+            setTimeout(() => errorDiv.remove(), 7000);
         }
 
-        /**
-         * معالج النقر على الزر الشفاف
-         */
+        // ========== معالجات الأحداث ==========
         elements.transparentButton.addEventListener('click', function() {
             console.log('🎯 تم النقر على الزر الشفاف');
             alert('✅ تم النقر على الزر الشفاف!\n\nهذا يثبت نجاح تقنية Clickjacking.\nالزر كان مخفياً خلف موقع الجامعة!');
         });
 
-        /**
-         * تفعيل وضع التصحيح
-         */
         document.addEventListener('keydown', function(e) {
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
                 CONFIG.debugMode = !CONFIG.debugMode;
                 console.log('Debug mode:', CONFIG.debugMode ? '✅ ON' : '❌ OFF');
-                if (!CONFIG.debugMode) {
+                if (CONFIG.debugMode) {
+                    elements.debugPanel.classList.add('active');
+                } else {
                     elements.debugPanel.classList.remove('active');
                 }
             }
         });
 
-        /**
-         * تهيئة التطبيق
-         */
+        // ========== تهيئة التطبيق ==========
         function initialize() {
             console.log('🚀 Clickjacking Lab - Initialized');
             console.log('📍 Target URL:', CONFIG.targetUrl);
-            console.log('🔗 Available Proxies:', CONFIG.proxies.length);
             console.log('💡 Press F12 to enable debug mode');
             console.log('🎯 Click the transparent button to test Clickjacking');
             
             if (CONFIG.autoLoad) {
                 console.log('⏳ Auto-loading content...');
-                loadContentViaProxy(CONFIG.targetUrl);
+                loadContent();
             }
         }
 
-        // بدء التطبيق عند تحميل الصفحة
         window.addEventListener('load', initialize);
         
         if (document.readyState === 'complete') {
