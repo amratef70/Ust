@@ -1,36 +1,39 @@
 {
-  "name": "clickjacking-professional-lab",
+  "name": "ust-clickjacking-lab",
   "version": "1.0.0",
-  "description": "مشروع تعليمي متقدم لدراسة تقنيات Clickjacking وتجاوز قيود X-Frame-Options",
-  "main": "index.html",
+  "description": "Educational Clickjacking Lab - UST Portal with Puppeteer Server",
+  "main": "puppeteer-server.js",
   "scripts": {
-    "start": "python3 -m http.server 8000",
-    "dev": "npx http-server -p 8000 -c-1",
+    "start": "node puppeteer-server.js",
+    "dev": "nodemon puppeteer-server.js",
+    "web": "python3 -m http.server 8000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "clickjacking",
     "security",
-    "web-security",
-    "x-frame-options",
-    "cors",
-    "educational",
-    "cybersecurity",
-    "web-component"
+    "web",
+    "puppeteer",
+    "proxy",
+    "educational"
   ],
-  "author": "Advanced Development Team",
-  "license": "Educational Use Only",
+  "author": "Amr Atef",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/amratef70/Ust"
   },
-  "engines": {
-    "node": ">=14.0.0"
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^21.6.0",
+    "cors": "^2.8.5",
+    "x-frame-bypass": "^1.0.2"
   },
   "devDependencies": {
+    "nodemon": "^3.0.2",
     "http-server": "^14.1.1"
   },
-  "dependencies": {
-    "x-frame-bypass": "^1.0.2"
+  "engines": {
+    "node": "18.x"
   }
 }

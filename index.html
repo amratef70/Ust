@@ -189,7 +189,7 @@
             <span id="status-icon">✅</span>
             <span id="status-label">جامعة العلوم والتكنولوجيا</span>
         </div>
-        <div class="info-badge" id="proxy-badge">AllOrigins Proxy</div>
+        <div class="info-badge" id="proxy-badge">Puppeteer Server</div>
     </div>
 
     <button id="demo-button">🎯 Clickjacking Demo</button>
@@ -201,7 +201,7 @@
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-content">
             <div class="spinner"></div>
-            <p>جاري تحميل موقع الجامعة...</p>
+            <p>جاري تحميل موقع الجامعة عبر Puppeteer Server...</p>
         </div>
     </div>
 
@@ -219,38 +219,21 @@
 
         const targetUrl = 'https://portal.ust.edu.ye';
 
-        // قائمة البروكسيات المتقدمة
-        const proxies = [
+        // قائمة الخوادم المتاحة
+        const servers = [
             {
-                name: 'AllOrigins',
-                url: 'https://api.allorigins.win/get?url=',
-                parse: (data) => {
-                    try {
-                        const json = JSON.parse(data);
-                        return json.contents || json.html || json.body || data;
-                    } catch (e) {
-                        return data;
-                    }
-                }
+                name: 'Local Puppeteer',
+                url: 'http://localhost:3000/api/load-page'
             },
             {
-                name: 'Allorigins v2',
-                url: 'https://allorigins.win/raw?url=',
-                parse: (data) => data
+                name: 'AllOrigins Proxy',
+                url: 'https://api.allorigins.win/get?url='
             },
             {
                 name: 'ThingProxy',
-                url: 'https://thingproxy.freeboard.io/fetch/',
-                parse: (data) => data
-            },
-            {
-                name: 'CodeTabs',
-                url: 'https://api.codetabs.com/v1/proxy?quest=',
-                parse: (data) => data
+                url: 'https://thingproxy.freeboard.io/fetch/'
             }
         ];
-
-        let currentProxyIndex = 0;
 
         function showLoading(show) {
             if (show) {
@@ -276,65 +259,101 @@
             }
         }
 
+        async function loadWithPuppeteer() {
+            try {
+                console.log('🚀 محاولة تحميل عبر Puppeteer Server...');
+                updateStatus('⏳', 'محاولة Puppeteer Server...', 'Puppeteer');
+
+                const response = await Promise.race([
+                    fetch(`http://localhost:3000/api/load-page?url=${encodeURIComponent(targetUrl)}`),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), 15000)
+                    )
+                ]);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+
+                if (data.success && data.html) {
+                    frame.srcdoc = data.html;
+                    showLoading(false);
+                    updateStatus('✅', 'تم تحميل موقع الجامعة بنجاح (Puppeteer)!', 'Puppeteer ✅');
+                    console.log('✅ تم التحميل بنجاح عبر Puppeteer!');
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ خطأ في Puppeteer:', error.message);
+            }
+            return false;
+        }
+
+        async function loadWithAllOrigins() {
+            try {
+                console.log('🚀 محاولة تحميل عبر AllOrigins...');
+                updateStatus('⏳', 'محاولة AllOrigins Proxy...', 'AllOrigins');
+
+                const response = await Promise.race([
+                    fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, {
+                        mode: 'cors',
+                        cache: 'no-cache'
+                    }),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), 15000)
+                    )
+                ]);
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                let data = await response.text();
+                
+                try {
+                    const json = JSON.parse(data);
+                    data = json.contents || json.html || json.body || data;
+                } catch (e) {
+                    // ليس JSON
+                }
+
+                if (data && data.length > 500) {
+                    let html = data;
+                    html = html.replace(/X-Frame-Options/gi, '');
+                    html = html.replace(/Content-Security-Policy/gi, '');
+                    html = html.replace(/frame-ancestors/gi, '');
+                    
+                    if (!html.includes('<base')) {
+                        html = html.replace('<head>', `<head><base href="${targetUrl}">`);
+                    }
+
+                    frame.srcdoc = html;
+                    showLoading(false);
+                    updateStatus('✅', 'تم تحميل موقع الجامعة بنجاح (AllOrigins)!', 'AllOrigins ✅');
+                    console.log('✅ تم التحميل بنجاح عبر AllOrigins!');
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ خطأ في AllOrigins:', error.message);
+            }
+            return false;
+        }
+
         async function loadContent() {
             showLoading(true);
             updateStatus('⏳', 'جاري التحميل...', '');
 
-            for (let i = 0; i < proxies.length; i++) {
-                const proxy = proxies[i];
-                try {
-                    console.log(`محاولة ${i + 1}/${proxies.length}: ${proxy.name}`);
-                    updateStatus('⏳', `محاولة ${i + 1}/${proxies.length}: ${proxy.name}`, proxy.name);
-
-                    const proxyUrl = proxy.url + encodeURIComponent(targetUrl);
-                    
-                    const response = await Promise.race([
-                        fetch(proxyUrl, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            },
-                            mode: 'cors',
-                            cache: 'no-cache'
-                        }),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Timeout')), 10000)
-                        )
-                    ]);
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                    let html = await response.text();
-                    html = proxy.parse(html);
-
-                    if (html && html.length > 500) {
-                        // معالجة HTML
-                        html = html.replace(/X-Frame-Options/gi, '');
-                        html = html.replace(/Content-Security-Policy/gi, '');
-                        html = html.replace(/frame-ancestors/gi, '');
-                        
-                        // إضافة base tag
-                        if (!html.includes('<base')) {
-                            html = html.replace('<head>', `<head><base href="${targetUrl}">`);
-                        }
-
-                        frame.srcdoc = html;
-                        showLoading(false);
-                        updateStatus('✅', 'تم تحميل موقع الجامعة بنجاح!', proxy.name);
-                        console.log('✅ تم التحميل بنجاح!');
-                        return;
-                    }
-                } catch (error) {
-                    console.error(`❌ خطأ في ${proxy.name}: ${error.message}`);
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 500));
+            // محاولة Puppeteer أولاً
+            if (await loadWithPuppeteer()) {
+                return;
             }
 
+            // بعدها AllOrigins
+            if (await loadWithAllOrigins()) {
+                return;
+            }
+
+            // فشل الجميع
             showLoading(false);
-            updateStatus('❌', 'فشل تحميل الموقع - جميع البروكسيات معطلة', '');
-            showError('عذراً، لم نتمكن من تحميل موقع الجامعة. يرجى المحاولة لاحقاً.');
+            updateStatus('❌', 'فشل تحميل الموقع - جميع الخوادم معطلة', '');
+            showError('عذراً، لم نتمكن من تحميل موقع الجامعة. تأكد من أن Puppeteer Server يعمل!');
             console.error('فشلت جميع المحاولات');
         }
 
@@ -359,6 +378,7 @@
         console.log('%c🚀 Clickjacking Lab - UST Portal', 'font-size: 20px; color: #4CAF50; font-weight: bold;');
         console.log('%cهذا مشروع تعليمي يوضح تقنية Clickjacking', 'font-size: 14px; color: #666;');
         console.log('%cاضغط F5 لإعادة تحميل الموقع', 'font-size: 12px; color: #999;');
+        console.log('%cتشغيل Puppeteer Server: npm start', 'font-size: 12px; color: #4CAF50;');
     </script>
 </body>
 </html>
