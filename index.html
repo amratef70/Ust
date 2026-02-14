@@ -5,136 +5,347 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جامعة العلوم والتكنولوجيا - البوابة</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+        }
+
         #status-bar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 50px;
-            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 60px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 0 20px;
             z-index: 1000;
             font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
-        #frame {
+        #status-text {
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #frame-container {
             position: fixed;
-            top: 50px;
+            top: 60px;
             left: 0;
             right: 0;
             bottom: 0;
             width: 100%;
-            height: calc(100% - 50px);
+            height: calc(100% - 60px);
+            background: white;
+            overflow: hidden;
+        }
+
+        #frame {
+            width: 100%;
+            height: 100%;
             border: none;
+            display: block;
         }
 
         #demo-button {
             position: fixed;
-            top: 100px;
+            top: 120px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 15px 40px;
-            background: rgba(76, 175, 80, 0.7);
+            padding: 12px 30px;
+            background: rgba(76, 175, 80, 0.8);
             color: white;
             border: 2px dashed #4CAF50;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             z-index: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         #demo-button:hover {
-            background: rgba(76, 175, 80, 0.9);
+            background: rgba(76, 175, 80, 0.95);
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        #demo-button:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading-content .spinner {
+            width: 40px;
+            height: 40px;
+            border-width: 4px;
+            margin: 0 auto 15px;
+        }
+
+        .loading-content p {
+            color: #666;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #error-message.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .info-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div id="status-bar">
-        ✅ موقع جامعة العلوم والتكنولوجيا - تم التحميل بنجاح!
+        <div id="status-text">
+            <span id="status-icon">✅</span>
+            <span id="status-label">جامعة العلوم والتكنولوجيا</span>
+        </div>
+        <div class="info-badge" id="proxy-badge">AllOrigins Proxy</div>
     </div>
 
     <button id="demo-button">🎯 Clickjacking Demo</button>
 
-    <iframe id="frame"></iframe>
+    <div id="frame-container">
+        <iframe id="frame"></iframe>
+    </div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>جاري تحميل موقع الجامعة...</p>
+        </div>
+    </div>
+
+    <div id="error-message"></div>
 
     <script>
         const frame = document.getElementById('frame');
+        const statusText = document.getElementById('status-text');
+        const statusLabel = document.getElementById('status-label');
+        const statusIcon = document.getElementById('status-icon');
         const button = document.getElementById('demo-button');
-        const statusBar = document.getElementById('status-bar');
-
-        // قائمة البروكسيات القوية
-        const proxies = [
-            'https://api.allorigins.win/get?url=',
-            'https://cors-anywhere.herokuapp.com/',
-            'https://thingproxy.freeboard.io/fetch/',
-            'https://api.codetabs.com/v1/proxy?quest=',
-        ];
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const errorMessage = document.getElementById('error-message');
+        const proxyBadge = document.getElementById('proxy-badge');
 
         const targetUrl = 'https://portal.ust.edu.ye';
 
-        async function loadContent() {
-            for (let i = 0; i < proxies.length; i++) {
-                try {
-                    console.log(`محاولة ${i + 1}: ${proxies[i]}`);
-                    statusBar.textContent = `⏳ محاولة ${i + 1}/${proxies.length}...`;
+        // قائمة البروكسيات المتقدمة
+        const proxies = [
+            {
+                name: 'AllOrigins',
+                url: 'https://api.allorigins.win/get?url=',
+                parse: (data) => {
+                    try {
+                        const json = JSON.parse(data);
+                        return json.contents || json.html || json.body || data;
+                    } catch (e) {
+                        return data;
+                    }
+                }
+            },
+            {
+                name: 'Allorigins v2',
+                url: 'https://allorigins.win/raw?url=',
+                parse: (data) => data
+            },
+            {
+                name: 'ThingProxy',
+                url: 'https://thingproxy.freeboard.io/fetch/',
+                parse: (data) => data
+            },
+            {
+                name: 'CodeTabs',
+                url: 'https://api.codetabs.com/v1/proxy?quest=',
+                parse: (data) => data
+            }
+        ];
 
-                    const proxyUrl = proxies[i] + encodeURIComponent(targetUrl);
-                    const response = await fetch(proxyUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        },
-                        mode: 'cors'
-                    });
+        let currentProxyIndex = 0;
+
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.add('active');
+            } else {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        function updateStatus(icon, text, badge) {
+            statusIcon.textContent = icon;
+            statusLabel.textContent = text;
+            if (badge) {
+                proxyBadge.textContent = badge;
+            }
+        }
+
+        async function loadContent() {
+            showLoading(true);
+            updateStatus('⏳', 'جاري التحميل...', '');
+
+            for (let i = 0; i < proxies.length; i++) {
+                const proxy = proxies[i];
+                try {
+                    console.log(`محاولة ${i + 1}/${proxies.length}: ${proxy.name}`);
+                    updateStatus('⏳', `محاولة ${i + 1}/${proxies.length}: ${proxy.name}`, proxy.name);
+
+                    const proxyUrl = proxy.url + encodeURIComponent(targetUrl);
+                    
+                    const response = await Promise.race([
+                        fetch(proxyUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            mode: 'cors',
+                            cache: 'no-cache'
+                        }),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Timeout')), 10000)
+                        )
+                    ]);
 
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                     let html = await response.text();
-                    
-                    // محاولة استخراج المحتوى من JSON
-                    try {
-                        const json = JSON.parse(html);
-                        html = json.contents || json.html || json.body || html;
-                    } catch (e) {
-                        // ليس JSON، استخدم المحتوى مباشرة
-                    }
+                    html = proxy.parse(html);
 
                     if (html && html.length > 500) {
-                        // معالجة بسيطة
+                        // معالجة HTML
                         html = html.replace(/X-Frame-Options/gi, '');
                         html = html.replace(/Content-Security-Policy/gi, '');
+                        html = html.replace(/frame-ancestors/gi, '');
                         
                         // إضافة base tag
-                        html = html.replace('<head>', `<head><base href="${targetUrl}">`);
+                        if (!html.includes('<base')) {
+                            html = html.replace('<head>', `<head><base href="${targetUrl}">`);
+                        }
 
                         frame.srcdoc = html;
-                        statusBar.textContent = '✅ موقع جامعة العلوم والتكنولوجيا - تم التحميل بنجاح!';
+                        showLoading(false);
+                        updateStatus('✅', 'تم تحميل موقع الجامعة بنجاح!', proxy.name);
                         console.log('✅ تم التحميل بنجاح!');
                         return;
                     }
                 } catch (error) {
-                    console.error(`❌ خطأ: ${error.message}`);
+                    console.error(`❌ خطأ في ${proxy.name}: ${error.message}`);
                 }
 
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            statusBar.textContent = '❌ فشل تحميل الموقع - جميع البروكسيات معطلة';
+            showLoading(false);
+            updateStatus('❌', 'فشل تحميل الموقع - جميع البروكسيات معطلة', '');
+            showError('عذراً، لم نتمكن من تحميل موقع الجامعة. يرجى المحاولة لاحقاً.');
             console.error('فشلت جميع المحاولات');
         }
 
         button.addEventListener('click', () => {
-            alert('🎯 تم النقر على الزر الشفاف!\n\nهذا مثال على تقنية Clickjacking');
+            alert('🎯 تم النقر على الزر الشفاف!\n\nهذا مثال على تقنية Clickjacking\n\nتم إخفاء زر فوق محتوى آخر!');
         });
 
         // تحميل عند فتح الصفحة
-        window.addEventListener('load', loadContent);
+        window.addEventListener('load', () => {
+            setTimeout(loadContent, 500);
+        });
 
         // تحميل يدوي عند الضغط على F5
         document.addEventListener('keydown', (e) => {
@@ -143,6 +354,11 @@
                 loadContent();
             }
         });
+
+        // معلومات في الـ Console
+        console.log('%c🚀 Clickjacking Lab - UST Portal', 'font-size: 20px; color: #4CAF50; font-weight: bold;');
+        console.log('%cهذا مشروع تعليمي يوضح تقنية Clickjacking', 'font-size: 14px; color: #666;');
+        console.log('%cاضغط F5 لإعادة تحميل الموقع', 'font-size: 12px; color: #999;');
     </script>
 </body>
 </html>
